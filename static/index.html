@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>韓国語単語抽出アプリ | YouTube字幕からレベル別単語と例文を生成</title>
+  <meta name="description" content="YouTube動画の韓国語字幕から目標レベル（初級・中級・上級）に合わせた重要単語をGemini APIで自動抽出し、重複排除・日本語の意味・韓国語例文を生成する学習ツール">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="dark-theme">
+  <!-- Header Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-logo">
+          <span class="logo-icon">✨</span>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">K-Word Studio</span>
+          <span class="brand-subtitle">YouTube × Gemini 韓国語単語抽出</span>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <button id="btnOpenSettings" class="btn-icon-text" aria-label="APIキー設定">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span class="btn-label">APIキー設定</span>
+          <span id="apiKeyBadge" class="key-badge not-set">未設定</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="content-wrapper">
+      
+      <!-- Hero Header -->
+      <section class="hero-section">
+        <div class="hero-badge">AI-Powered Korean Vocabulary Learning</div>
+        <h1 class="hero-title">YouTube字幕から<span class="gradient-text">実践的な韓国語単語</span>を自動抽出</h1>
+        <p class="hero-desc">お気に入りのK-POP、Vlog、ドラマのYouTubeリンクを入力するだけで、Gemini APIがあなたのレベルに最適な単語を厳選し、重複排除・日本語の意味・自然な韓国語例文を自動生成します。</p>
+      </section>
+
+      <!-- Input Card -->
+      <section class="glass-card input-card">
+        <!-- Input Tabs -->
+        <div class="tabs-header">
+          <button class="tab-btn active" id="tabYoutube" data-tab="youtube">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            YouTubeリンクから抽出
+          </button>
+          <button class="tab-btn" id="tabText" data-tab="text">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            テキスト直接入力
+          </button>
+        </div>
+
+        <!-- Tab 1: YouTube Link -->
+        <div class="tab-content active" id="tabContentYoutube">
+          <div class="input-group-wrapper">
+            <label for="youtubeUrlInput" class="input-label">YouTube 動画URL / 共有リンク</label>
+            <div class="search-input-box">
+              <span class="input-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              </span>
+              <input type="text" id="youtubeUrlInput" placeholder="https://www.youtube.com/watch?v=... または youtu.be/..." autocomplete="off">
+              <button type="button" id="btnClearUrl" class="btn-clear" title="クリア" style="display:none;">✕</button>
+              <button type="button" id="btnPasteUrl" class="btn-paste" title="貼り付け">貼り付け</button>
+            </div>
+            <div class="sample-links-bar">
+              <span class="sample-label">💡 おすすめ韓国語動画:</span>
+              <button type="button" class="btn-sample-link" data-url="https://www.youtube.com/watch?v=kYJdJ-t73vI">韓国語日常会話Vlog</button>
+              <button type="button" class="btn-sample-link" data-url="https://www.youtube.com/watch?v=xZ_8HjL4YvM">韓国語基礎レッスン</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Raw Text -->
+        <div class="tab-content" id="tabContentText" style="display:none;">
+          <div class="input-group-wrapper">
+            <label for="rawTextInput" class="input-label">韓国語テキスト（字幕なし動画の文字起こしや記事など）</label>
+            <textarea id="rawTextInput" rows="5" placeholder="韓国語の文章をここに貼り付けてください... (例: 안녕하세요! 오늘은 한국어 공부를 시작해 봅시다. 새로운 단어를 배우고 유용한 표현을 연습해요.)"></textarea>
+          </div>
+        </div>
+
+        <!-- Level Selector -->
+        <div class="level-selection-section">
+          <label class="input-label">学習目標レベルを選択</label>
+          <div class="level-cards-grid">
+            <label class="level-card">
+              <input type="radio" name="targetLevel" value="beginner">
+              <div class="level-card-inner">
+                <div class="level-badge beginner-badge">初級</div>
+                <div class="level-title">TOPIK 1〜2級 相当</div>
+                <p class="level-desc">基礎語彙、基本動詞・形容詞、挨拶、買い物、時間、家族など日常の基本表現</p>
+              </div>
+            </label>
+
+            <label class="level-card">
+              <input type="radio" name="targetLevel" value="intermediate" checked>
+              <div class="level-card-inner">
+                <div class="level-badge intermediate-badge">中級 (おすすめ)</div>
+                <div class="level-title">TOPIK 3〜4級 相当</div>
+                <p class="level-desc">日常会話を発展させた表現、感情・意見、仕事や社会生活、よく使われる慣用語</p>
+              </div>
+            </label>
+
+            <label class="level-card">
+              <input type="radio" name="targetLevel" value="advanced">
+              <div class="level-card-inner">
+                <div class="level-badge advanced-badge">上級</div>
+                <div class="level-title">TOPIK 5〜6級 相当</div>
+                <p class="level-desc">ニュース、時事問題、専門用語、四字熟語、ことわざ、ニュアンスの深い高級語彙</p>
+              </div>
+            </label>
+
+            <label class="level-card">
+              <input type="radio" name="targetLevel" value="all">
+              <div class="level-card-inner">
+                <div class="level-badge all-badge">全レベル</div>
+                <div class="level-title">動画の重要単語</div>
+                <p class="level-desc">レベルを問わず、動画の文脈理解に重要で頻出する代表的な単語をバランスよく抽出</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="submit-action-row">
+          <button id="btnExtract" class="btn-primary-gradient">
+            <span class="btn-spinner" style="display: none;"></span>
+            <span class="btn-icon">⚡</span>
+            <span class="btn-text">単語を抽出して学習リストを作成</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Loading / Progress State -->
+      <section id="progressSection" class="glass-card progress-card" style="display: none;">
+        <div class="progress-header">
+          <div class="loading-spinner-ring"></div>
+          <div class="progress-status-info">
+            <h3 id="progressTitle" class="progress-title">YouTube字幕を取得中...</h3>
+            <p id="progressSubtitle" class="progress-subtitle">動画の韓国語字幕トラックを解析しています</p>
+          </div>
+        </div>
+        <div class="steps-indicator">
+          <div class="step-item active" id="step1">
+            <div class="step-dot">1</div>
+            <div class="step-text">字幕データ取得</div>
+          </div>
+          <div class="step-line" id="stepLine1"></div>
+          <div class="step-item" id="step2">
+            <div class="step-dot">2</div>
+            <div class="step-text">Gemini単語抽出</div>
+          </div>
+          <div class="step-line" id="stepLine2"></div>
+          <div class="step-item" id="step3">
+            <div class="step-dot">3</div>
+            <div class="step-text">意味・例文・音声生成</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Video Info Banner (Shown after fetch) -->
+      <section id="videoInfoSection" class="glass-card video-card" style="display: none;">
+        <div class="video-card-content">
+          <img id="videoThumb" src="" alt="Thumbnail" class="video-thumb">
+          <div class="video-details">
+            <div class="video-badges">
+              <span class="badge-source">YouTube 動画</span>
+              <span id="videoLevelBadge" class="badge-level">中級</span>
+              <span id="wordCountBadge" class="badge-count">0単語 抽出</span>
+            </div>
+            <h2 id="videoTitle" class="video-title">動画タイトル</h2>
+            <div class="video-meta-row">
+              <span id="videoChannel" class="video-channel">チャンネル名</span>
+              <a id="videoLink" href="#" target="_blank" rel="noopener noreferrer" class="btn-yt-link">
+                YouTubeで開く ↗
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section id="resultsSection" class="results-section" style="display: none;">
+        <!-- Controls Bar -->
+        <div class="results-toolbar glass-card">
+          <div class="toolbar-left">
+            <div class="filter-search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="filterInput" placeholder="単語・意味で絞り込み...">
+            </div>
+            <div class="filter-pos-select-box">
+              <select id="posSelect">
+                <option value="all">すべての品詞</option>
+                <option value="動詞">動詞</option>
+                <option value="形容詞">形容詞</option>
+                <option value="名詞">名詞</option>
+                <option value="副詞">副詞</option>
+              </select>
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <!-- View Mode Switch -->
+            <div class="view-switch">
+              <button class="view-btn active" id="btnViewCards" title="カード表示">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              </button>
+              <button class="view-btn" id="btnViewTable" title="テーブル表示">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              </button>
+            </div>
+            <!-- Export Options -->
+            <button id="btnExportCsv" class="btn-action" title="CSVダウンロード">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              CSV出力
+            </button>
+            <button id="btnCopyAnki" class="btn-action" title="Anki / メモ用コピー">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              Ankiコピー
+            </button>
+          </div>
+        </div>
+
+        <!-- Pos Stats Bar -->
+        <div id="posStatsBar" class="pos-stats-bar"></div>
+
+        <!-- Cards Container -->
+        <div id="wordsContainerCards" class="words-grid"></div>
+
+        <!-- Table Container -->
+        <div id="wordsContainerTable" class="words-table-wrapper glass-card" style="display: none;">
+          <table class="words-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">音声</th>
+                <th>韓国語単語</th>
+                <th>漢字</th>
+                <th>品詞</th>
+                <th>発音</th>
+                <th>日本語の意味</th>
+                <th>韓国語例文</th>
+                <th>例文訳</th>
+              </tr>
+            </thead>
+            <tbody id="wordsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <h3 class="modal-title">APIキー設定</h3>
+        <button id="btnCloseSettings" class="btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-note">
+          APIキーはブラウザのLocalStorageに安全に保持され、外部サーバーに保存されることはありません。<br>
+          ※ サーバーの <code>.env</code> ファイルに設定済みの場合は入力不要です。
+        </p>
+
+        <div class="modal-field">
+          <label for="inputGeminiKey" class="field-label">
+            Gemini API キー <span class="required-star">*必須</span>
+          </label>
+          <div class="field-input-box">
+            <input type="password" id="inputGeminiKey" placeholder="AIzaSy...">
+            <button type="button" class="btn-toggle-pw" data-target="inputGeminiKey">👁</button>
+          </div>
+          <span class="field-help">Google AI Studioから無料で取得できます: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">APIキーを取得 ↗</a></span>
+        </div>
+
+        <div class="modal-field">
+          <label for="inputYoutubeKey" class="field-label">
+            YouTube Data API v3 キー <span class="optional-tag">任意</span>
+          </label>
+          <div class="field-input-box">
+            <input type="password" id="inputYoutubeKey" placeholder="AIzaSy...">
+            <button type="button" class="btn-toggle-pw" data-target="inputYoutubeKey">👁</button>
+          </div>
+          <span class="field-help">動画タイトルの高度な取得に使用されます（未設定でも自動フォールバックが動作します）</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnSaveSettings" class="btn-primary-modal">保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast-notice" style="display: none;"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

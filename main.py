@@ -58,12 +58,17 @@ class ExportCsvRequest(BaseModel):
 
 @app.get("/api/config")
 def get_config_status():
-    """Check if environment variables are configured on the server."""
+    """Check if environment variables or cookies are configured on the server."""
     env_gemini = bool(os.getenv("GEMINI_API_KEY"))
     env_youtube = bool(os.getenv("YOUTUBE_API_KEY"))
+    has_cookies = bool(
+        os.getenv("YOUTUBE_COOKIES") or 
+        (os.path.exists("cookies.txt") and os.path.getsize("cookies.txt") > 0)
+    )
     return {
         "has_server_gemini_key": env_gemini,
-        "has_server_youtube_key": env_youtube
+        "has_server_youtube_key": env_youtube,
+        "has_youtube_cookies": has_cookies
     }
 
 @app.post("/api/extract", response_model=ExtractResponse)
@@ -123,14 +128,21 @@ def extract_words_endpoint(req: ExtractRequest):
             desc_text_content = str(meta.get("description") or "")
             has_korean = bool(re.search(r'[\uac00-\ud7a3]', f"{title_text} {desc_text_content}"))
             desc_text = f"{title_text}\n{desc_text_content}".strip()
-            if has_korean and len(desc_text) >= 15:
+            if has_korean and len(desc_text) >= 20:
                 # Use description and title as fallback text so extraction succeeds
                 full_text = desc_text
                 print(f"[Info] Subtitle restricted. Used video description as fallback for {video_id}")
             else:
                 raise HTTPException(
                     status_code=422,
-                    detail=f"{str(e)}（動画の概要欄や韓国語の文章を「テキスト直接入力」タブに貼り付けるとすぐに抽出できます）"
+                    detail={
+                        "message": str(e),
+                        "code": "SUBTITLE_UNAVAILABLE_OR_BLOCKED",
+                        "video_id": video_id,
+                        "video_title": meta.get("title"),
+                        "video_url": f"https://www.youtube.com/watch?v={video_id}",
+                        "suggest_manual_paste": True
+                    }
                 )
         except Exception as e:
             raise HTTPException(

@@ -70,6 +70,13 @@ const elements = {
   btnExportCsv: document.getElementById('btnExportCsv'),
   btnCopyAnki: document.getElementById('btnCopyAnki'),
 
+  // Subtitle Assist Modal
+  subtitleAssistModal: document.getElementById('subtitleAssistModal'),
+  btnCloseAssistModal: document.getElementById('btnCloseAssistModal'),
+  btnAssistClose: document.getElementById('btnAssistClose'),
+  btnAssistOpenYoutube: document.getElementById('btnAssistOpenYoutube'),
+  btnAssistPasteAndSwitch: document.getElementById('btnAssistPasteAndSwitch'),
+
   // Toast
   toast: document.getElementById('toast')
 };
@@ -128,6 +135,22 @@ function initEventListeners() {
     if (e.target === elements.settingsModal) closeSettingsModal();
   });
   elements.btnSaveSettings.addEventListener('click', saveSettings);
+
+  // Subtitle Assist Modal Listeners
+  if (elements.btnCloseAssistModal) {
+    elements.btnCloseAssistModal.addEventListener('click', closeAssistModal);
+  }
+  if (elements.btnAssistClose) {
+    elements.btnAssistClose.addEventListener('click', closeAssistModal);
+  }
+  if (elements.subtitleAssistModal) {
+    elements.subtitleAssistModal.addEventListener('click', (e) => {
+      if (e.target === elements.subtitleAssistModal) closeAssistModal();
+    });
+  }
+  if (elements.btnAssistPasteAndSwitch) {
+    elements.btnAssistPasteAndSwitch.addEventListener('click', handleAssistPasteAndSwitch);
+  }
 
   // Toggle Password Visibility
   document.querySelectorAll('.btn-toggle-pw').forEach(btn => {
@@ -221,6 +244,22 @@ async function checkServerConfig() {
 }
 
 function updateApiKeyStatusUI() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const forceShow = urlParams.has('settings') || urlParams.has('admin');
+
+  // サーバーにキーがある場合、一般利用者向けに「APIキー設定」ボタンを完全に非表示にする
+  if (state.hasServerGeminiKey && !forceShow) {
+    if (elements.btnOpenSettings) {
+      elements.btnOpenSettings.style.display = 'none';
+    }
+    return;
+  }
+
+  // サーバーにキーがない（または管理者用パラメータ付き）場合のみ設定ボタンを表示
+  if (elements.btnOpenSettings) {
+    elements.btnOpenSettings.style.display = 'inline-flex';
+  }
+
   const localGemini = localStorage.getItem('kword_gemini_api_key');
   const isSet = state.hasServerGeminiKey || (localGemini && localGemini.length > 5);
 
@@ -260,6 +299,41 @@ function saveSettings() {
   updateApiKeyStatusUI();
   closeSettingsModal();
   showToast('APIキー設定を保存しました');
+}
+
+// Subtitle Assist Modal Controls
+function openAssistModal(videoUrl, videoTitle) {
+  if (!elements.subtitleAssistModal) return;
+  const targetUrl = videoUrl || elements.youtubeUrlInput.value.trim() || 'https://www.youtube.com';
+  if (elements.btnAssistOpenYoutube) {
+    elements.btnAssistOpenYoutube.href = targetUrl;
+  }
+  elements.subtitleAssistModal.style.display = 'flex';
+}
+
+function closeAssistModal() {
+  if (elements.subtitleAssistModal) {
+    elements.subtitleAssistModal.style.display = 'none';
+  }
+}
+
+async function handleAssistPasteAndSwitch() {
+  closeAssistModal();
+  switchTab('text');
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text && text.trim()) {
+      elements.rawTextInput.value = text.trim();
+      showToast('クリップボードのテキストを貼り付けました！「単語を抽出」を押してください');
+      elements.rawTextInput.focus();
+    } else {
+      showToast('「テキスト直接入力」タブに切り替えました。コピーした文章を貼り付けてください');
+      elements.rawTextInput.focus();
+    }
+  } catch (e) {
+    showToast('「テキスト直接入力」タブに切り替えました。枠内に文字起こしを貼り付けてください');
+    elements.rawTextInput.focus();
+  }
 }
 
 // Progress Steps Animation
@@ -352,8 +426,12 @@ async function handleExtract() {
     clearTimeout(step3Timer);
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ detail: 'リクエスト処理に失敗しました' }));
-      throw new Error(err.detail || '抽出に失敗しました');
+      const errData = await response.json().catch(() => ({ detail: 'リクエスト処理に失敗しました' }));
+      const errorObj = new Error(
+        typeof errData.detail === 'string' ? errData.detail : (errData.detail?.message || '抽出に失敗しました')
+      );
+      errorObj.detailData = errData.detail;
+      throw errorObj;
     }
 
     const data = await response.json();
@@ -379,12 +457,25 @@ async function handleExtract() {
     elements.progressSection.style.display = 'none';
 
     const errMsg = error.message || '単語の抽出に失敗しました';
-    showToast(errMsg, true, 8000);
+    const detailData = error.detailData || {};
 
-    // If YouTube subtitle blocked, focus user on text tab option
-    if (errMsg.includes('アクセス制限') || errMsg.includes('見つかりませんでした') || errMsg.includes('無効化')) {
-      // Optional subtle prompt
-      console.warn('Subtitle fetch notice:', errMsg);
+    // Check if subtitle unavailable or blocked
+    const isSubtitleIssue = 
+      detailData.suggest_manual_paste ||
+      detailData.code === 'SUBTITLE_UNAVAILABLE_OR_BLOCKED' ||
+      errMsg.includes('アクセス制限') ||
+      errMsg.includes('見つかりませんでした') ||
+      errMsg.includes('無効化') ||
+      errMsg.includes('字幕');
+
+    if (isSubtitleIssue && state.currentTab === 'youtube') {
+      showToast(errMsg, true, 9000);
+      // Automatically pop up helper modal with 3 simple steps
+      setTimeout(() => {
+        openAssistModal(detailData.video_url, detailData.video_title);
+      }, 500);
+    } else {
+      showToast(errMsg, true, 8000);
     }
   } finally {
     elements.btnExtract.disabled = false;

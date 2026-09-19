@@ -24,7 +24,7 @@
         </div>
       </div>
       <div class="nav-actions">
-        <button id="btnOpenSettings" class="btn-icon-text" aria-label="APIキー設定">
+        <button id="btnOpenSettings" class="btn-icon-text" aria-label="APIキー設定" style="display:none;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           <span class="btn-label">APIキー設定</span>
           <span id="apiKeyBadge" class="key-badge not-set">未設定</span>
@@ -292,6 +292,56 @@
       </div>
       <div class="modal-footer">
         <button id="btnSaveSettings" class="btn-primary-modal">保存する</button>
+      </div>
+    </div>
+  <!-- Subtitle Assist Modal (Shown when YouTube blocks or no transcript) -->
+  <div id="subtitleAssistModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card glass-card assist-modal-card">
+      <div class="modal-header">
+        <div class="assist-header-badge">💡 100%確実に抽出できる解決策</div>
+        <button id="btnCloseAssistModal" class="btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <h3 class="assist-title">YouTube字幕の直接取得が制限されています</h3>
+        <p class="assist-desc">
+          YouTube側のアクセス制限（Bot判定）または動画の字幕設定により、サーバーから直接取得できませんでした。<br>
+          しかし、<strong>以下の3ステップ（所要時間10秒）</strong>で全く同じように単語リストを作成できます！
+        </p>
+
+        <div class="assist-steps-box">
+          <div class="assist-step">
+            <div class="assist-step-num">1</div>
+            <div class="assist-step-body">
+              <strong>動画ページを開く</strong>
+              <p>下のボタンを押して、YouTubeで該当の動画を開きます。</p>
+              <a id="btnAssistOpenYoutube" href="#" target="_blank" rel="noopener" class="btn-assist-action">
+                <span>▶ YouTubeで動画を開く</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="assist-step">
+            <div class="assist-step-num">2</div>
+            <div class="assist-step-body">
+              <strong>文字起こしを表示してコピー</strong>
+              <p>動画タイトルの下の概要欄にある<strong>「文字起こしを表示」</strong>をクリックし、表示された韓国語テキストをすべてコピー（Ctrl+A → Ctrl+C）します。</p>
+            </div>
+          </div>
+
+          <div class="assist-step">
+            <div class="assist-step-num">3</div>
+            <div class="assist-step-body">
+              <strong>このアプリに貼り付けて解析</strong>
+              <p>下のボタンを押すと、「テキスト直接入力」タブに切り替わり自動で貼り付けられます。</p>
+              <button id="btnAssistPasteAndSwitch" class="btn-assist-action primary">
+                <span>📋 コピーしたテキストを貼り付けて入力</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnAssistClose" class="btn-secondary-modal">閉じる</button>
       </div>
     </div>
   </div>

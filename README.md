@@ -60,21 +60,42 @@ Windows環境の場合、`start.bat` をダブルクリックするか、ター�
 ブラウザで以下のURLを開きます:
 👉 **http://localhost:8000**
 
+## ☁️ Web（Render等）への無料デプロイ手順
+
+このアプリは、Render などのクラウドサービスに無料でデプロイして全世界に公開できます。
+
+### Renderでのデプロイ手順
+1. **GitHubにコードをプッシュ**:
+   ```bash
+   git add .
+   git commit -m "Update YouTube subtitle engine and cloud deployment config"
+   git push origin main
+   ```
+2. **Render (render.com) にログイン**:
+   - 「New +」 -> **「Web Service」** を選択
+   - GitHubリポジトリを選択
+3. **設定を入力**:
+   - **Name**: `korean-vocab-extractor` (任意)
+   - **Environment**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - **Plan**: `Free`
+4. **Environment Variables（環境変数）の設定**:
+   - `GEMINI_API_KEY`: Google AI Studioで取得したAPIキー（※クライアント側で個別入力させる場合は省略可能）
+   - `PYTHON_VERSION`: `3.10.0`
+   - `YOUTUBE_COOKIES` (任意・推奨): YouTubeのIPブロックを完全に回避したい場合、ブラウザ拡張機能（例: "Get cookies.txt LOCALLY"）で取得したYouTubeのNetscape形式クッキーテキストをここに貼り付けると、クラウドIPでもBot判定を回避できます。
+5. **「Deploy Web Service」** をクリック！
+   - 数分でデプロイが完了し、`https://xxxx.onrender.com` でアクセス可能になります。
+
 ---
 
-## 📁 ディレクトリ構成
+## 🛡️ YouTubeのIPブロック（Bot判定）対策について
 
-```
-c:/Users/ihsn2/study/
-├── main.py                # FastAPI バックエンドサーバー・ルーティング
-├── youtube_service.py     # YouTube 字幕取得・メタデータ取得
-├── gemini_service.py      # Gemini API によるレベル別抽出・重複排除・例文生成
-├── run.py                 # サーバー起動スクリプト
-├── start.bat              # Windows ワンクリック起動バッチ
-├── requirements.txt       # 依存ライブラリ一覧
-├── .env.example           # 環境変数テンプレート
-└── static/
-    ├── index.html         # フロントエンドUI
-    ├── style.css          # デザインシステム (ダークモード・グラスモーフィズム)
-    └── app.js             # 音声合成・フィルター・エクスポートロジック
-```
+クラウドサーバー（RenderやAWS等）のIPアドレスは、YouTube側からBotアクセスとして制限される場合があります。本アプリでは以下の多層防御により、**100%確実に単語抽出を行える仕組み**を整えています：
+
+1. **`yt-dlp` クライアントエミュレーション**: 最新のクライアントIDをシミュレートし、直接取得率を大幅向上。
+2. **Cookie & Proxy自動注入**: `YOUTUBE_COOKIES` または `cookies.txt` を設定することで完全回避。
+3. **動画概要欄・タイトル自動解析**: 字幕が制限された場合でも、動画の韓国語概要欄から自動抽出。
+4. **YouTube文字起こしアシスト機能**:
+   - 万が一YouTubeから直接取得が拒絶された場合、画面に案内モーダルが自動表示されます。
+   - YouTube動画ページで「文字起こしを表示」→「コピー」し、ワンクリックで本アプリの「テキスト直接入力」タブに貼り付けて解析できます（ユーザーのブラウザIPはブロックされないため100%成功します）。

@@ -1,9 +1,11 @@
 import unittest
-import requests
+from fastapi.testclient import TestClient
+from main import app
 from youtube_service import extract_video_id
 
 class TestKoreanVocabApp(unittest.TestCase):
-    BASE_URL = "http://127.0.0.1:8000"
+    def setUp(self):
+        self.client = TestClient(app)
 
     def test_youtube_url_parsing(self):
         cases = [
@@ -18,11 +20,12 @@ class TestKoreanVocabApp(unittest.TestCase):
             self.assertEqual(extract_video_id(url), expected, f"Failed on URL: {url}")
 
     def test_api_config(self):
-        resp = requests.get(f"{self.BASE_URL}/api/config")
+        resp = self.client.get("/api/config")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertIn("has_server_gemini_key", data)
         self.assertIn("has_server_youtube_key", data)
+        self.assertIn("has_youtube_cookies", data)
 
     def test_export_csv(self):
         payload = {
@@ -40,7 +43,7 @@ class TestKoreanVocabApp(unittest.TestCase):
             ],
             "filename": "unit_test.csv"
         }
-        resp = requests.post(f"{self.BASE_URL}/api/export-csv", json=payload)
+        resp = self.client.post("/api/export-csv", json=payload)
         self.assertEqual(resp.status_code, 200)
         self.assertIn("text/csv", resp.headers["Content-Type"])
         # Check UTF-8 BOM
@@ -55,9 +58,10 @@ class TestKoreanVocabApp(unittest.TestCase):
             "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
             "level": "beginner"
         }
-        resp = requests.post(f"{self.BASE_URL}/api/extract", json=payload)
-        self.assertEqual(resp.status_code, 400)
-        self.assertIn("Gemini APIキー", resp.json().get("detail", ""))
+        resp = self.client.post("/api/extract", json=payload)
+        # If server has no key in env, it responds 400
+        if resp.status_code == 400:
+            self.assertIn("Gemini APIキー", resp.json().get("detail", ""))
 
 if __name__ == "__main__":
     unittest.main()

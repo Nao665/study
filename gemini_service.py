@@ -119,12 +119,13 @@ def extract_and_enrich_words(
    - `example_ko`: テキストの文脈または学習に最適な実用的で自然な韓国語例文
    - `example_ja`: 例文の自然な日本語訳
    - `level`: 初級 / 中級 / 上級 のいずれか
-5. **抽出単語数**:
-   - テキストが短い（1〜数文）場合は、文中に含まれる重要な単語をすべて抽出してください（最低1個以上）。
-   - 長文の場合は、テキストの長さに応じて10個〜30個程度の重要単語を抽出してください。
+5. **抽出単語数（できる限り多く網羅的に抽出）**:
+   - 動画・テキスト全体から、学習価値のある重要単語を **できる限り多く網羅的（目標：80個〜100個程度）** に抽出してください。
+   - 動詞、形容詞、名詞、副詞、慣用表現などを余すところなく幅広く拾い上げてください。
+   - テキストが非常に短い場合は、文中に含まれる重要な語彙を可能な限りすべて抽出してください。
 
 【対象テキスト】
-\"\"\"{text[:10000]}\"\"\"
+\"\"\"{text[:35000]}\"\"\"
 """
 
     client = genai.Client(api_key=api_key)
@@ -145,6 +146,7 @@ def extract_and_enrich_words(
                         response_mime_type="application/json",
                         response_schema=WordExtractionResult,
                         temperature=0.2,
+                        max_output_tokens=8192,
                     ),
                 )
             except Exception as schema_err:
@@ -158,6 +160,7 @@ def extract_and_enrich_words(
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
                         temperature=0.2,
+                        max_output_tokens=8192,
                     ),
                 )
 
